@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/Nav1Cr0ss/algorithms/pkg/fs"
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -13,11 +12,13 @@ const maxMemory = int64(100 * 1024 * 1024)
 
 type ExternalSort struct {
 	fs *fs.FS
+	ms *MemorySort
 }
 
 func NewExternalSort() *ExternalSort {
 	return &ExternalSort{
 		fs: fs.NewFS(),
+		ms: NewMemorySort(),
 	}
 }
 
@@ -71,9 +72,9 @@ func (s *ExternalSort) createSortedChunks(inputFile string, maxMemory int64) ([]
 		memUsed += int64(len(line) + 1)
 
 		if memUsed >= maxMemory {
-			sort.Ints(buffer)
+			sortedNums := s.ms.MergeSort(buffer)
 			chunkFile := fmt.Sprintf("chunk%d.txt", len(chunkFiles))
-			err := s.fs.WriteChunk(chunkFile, buffer)
+			err := s.fs.WriteChunk(chunkFile, sortedNums)
 			if err != nil {
 				return nil, err
 			}
@@ -85,9 +86,9 @@ func (s *ExternalSort) createSortedChunks(inputFile string, maxMemory int64) ([]
 	}
 
 	if len(buffer) > 0 {
-		sort.Ints(buffer)
+		sortedNums := s.ms.MergeSort(buffer)
 		chunkFile := fmt.Sprintf("chunk%d.txt", len(chunkFiles))
-		err := s.fs.WriteChunk(chunkFile, buffer)
+		err := s.fs.WriteChunk(chunkFile, sortedNums)
 		if err != nil {
 			return nil, err
 		}

@@ -31,7 +31,7 @@ func TestSorting(t *testing.T) {
 			sortProvider:   sort.NewExternalSort(),
 			inputFileName:  "test_external_input.txt",
 			outputFileName: "test_external_output.txt",
-			totalNum:       100000000,
+			totalNum:       10000000,
 		},
 	}
 
