@@ -27,6 +27,6 @@ func main() {
 		sorter = sort.NewMemorySort()
 	}
 
-	lab_1.SortArrayOfInt(inputFileName, outputFileName, sorter)
+	lab_1.Run(inputFileName, outputFileName, sorter)
 
 }

@@ -2,12 +2,12 @@ package fs
 
 import (
 	"bufio"
+	"container/heap"
 	"fmt"
-	"log"
+	"github.com/Nav1Cr0ss/algorithms/pkg/data_types"
 	"math/rand"
 	"os"
 	"strconv"
-	"sync"
 )
 
 type FS struct{}
@@ -135,57 +135,49 @@ func (f *FS) MergeChunks(chunkFiles []string, outputFile string) error {
 		}
 	}(output)
 
-	chunkData := make(chan string)
-	var wg sync.WaitGroup
+	pq := make(data_types.PriorityQueue, len(chunkFiles))
 
-	for _, chunkFile := range chunkFiles {
-		wg.Add(1)
-		go func(file string) {
-			defer wg.Done()
+	for i, chunkFile := range chunkFiles {
+		chunkReader, err := os.Open(chunkFile)
+		if err != nil {
+			return err
+		}
 
-			chunkReader, err := os.Open(file)
-			if err != nil {
-				log.Println(err)
-				return
+		scanner := bufio.NewScanner(chunkReader)
+		if scanner.Scan() {
+			item := &data_types.Item{
+				Value:   scanner.Text(),
+				Scanner: scanner,
 			}
-			defer func(chunkReader *os.File) {
-				err := chunkReader.Close()
-				if err != nil {
-					fmt.Println("Error on closing file:", err)
-				}
-			}(chunkReader)
+			pq[i] = item
+		}
 
-			scanner := bufio.NewScanner(chunkReader)
-			for scanner.Scan() {
-				chunkData <- scanner.Text()
-			}
-
-			if scanner.Err() != nil {
-				log.Println(scanner.Err())
-			}
-		}(chunkFile)
+		if scanner.Err() != nil {
+			return scanner.Err()
+		}
 	}
 
-	go func() {
-		writer := bufio.NewWriter(output)
-		defer func(writer *bufio.Writer) {
-			err := writer.Flush()
-			if err != nil {
-				fmt.Println("Error on flushing file:", err)
-			}
-		}(writer)
-
-		for data := range chunkData {
-			_, err := fmt.Fprintln(writer, data)
-			if err != nil {
-				return
-			}
+	heap.Init(&pq)
+	writer := bufio.NewWriter(output)
+	defer func(writer *bufio.Writer) {
+		err := writer.Flush()
+		if err != nil {
+			fmt.Println("Error on flushing file:", err)
 		}
-	}()
+	}(writer)
 
-	wg.Wait()
+	for pq.Len() > 0 {
+		item := heap.Pop(&pq).(*data_types.Item)
+		_, err := fmt.Fprintln(writer, item.Value)
+		if err != nil {
+			return err
+		}
 
-	close(chunkData)
+		if item.Scanner.Scan() {
+			item.Value = item.Scanner.Text()
+			heap.Push(&pq, item)
+		}
+	}
 
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/Nav1Cr0ss/algorithms/internal/domain/lab_1"
 	"github.com/Nav1Cr0ss/algorithms/pkg/fs"
 	"github.com/Nav1Cr0ss/algorithms/pkg/sort"
+	"math"
 	"os"
 	"strconv"
 	"testing"
@@ -24,14 +25,14 @@ func TestSorting(t *testing.T) {
 			sortProvider:   sort.NewMemorySort(),
 			inputFileName:  "test_memory_input.txt",
 			outputFileName: "test_memory_output.txt",
-			totalNum:       1000000,
+			totalNum:       int(10 * math.Pow10(6)),
 		},
 		{
 			name:           "ExternalSort",
 			sortProvider:   sort.NewExternalSort(),
 			inputFileName:  "test_external_input.txt",
 			outputFileName: "test_external_output.txt",
-			totalNum:       10000000,
+			totalNum:       int(10 * math.Pow10(6)),
 		},
 	}
 
@@ -48,7 +49,7 @@ func TestSorting(t *testing.T) {
 				}
 			}()
 
-			lab_1.SortArrayOfInt(tt.inputFileName, tt.outputFileName, tt.sortProvider)
+			lab_1.Run(tt.inputFileName, tt.outputFileName, tt.sortProvider)
 
 			outputFile, err := os.Open(tt.outputFileName)
 			if err != nil {
@@ -63,8 +64,8 @@ func TestSorting(t *testing.T) {
 
 			scanner := bufio.NewScanner(outputFile)
 
-			numbers := make([]int, 100)
-			for i := 0; i < 100; i++ {
+			numbers := make([]int, 1000)
+			for i := 0; i < 1000; i++ {
 				if !scanner.Scan() {
 					t.Fatalf("Failed to read 100 numbers from %s", tt.outputFileName)
 				}
