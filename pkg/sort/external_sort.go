@@ -43,6 +43,16 @@ func (s *ExternalSort) Sort(inputFile, outputFile string) error {
 	return nil
 }
 
+func (s *ExternalSort) saveSortedChunk(nums *[]int, fileNum int) (string, error) {
+	chunkFile := fmt.Sprintf("chunk%d.txt", fileNum)
+	sortedNums := s.ms.MergeSort(*nums)
+	err := s.fs.WriteChunk(chunkFile, sortedNums)
+	if err != nil {
+		return "", err
+	}
+	return chunkFile, nil
+}
+
 func (s *ExternalSort) createSortedChunks(inputFile string, maxMemory int64) ([]string, error) {
 	file, err := os.Open(inputFile)
 	if err != nil {
@@ -55,10 +65,10 @@ func (s *ExternalSort) createSortedChunks(inputFile string, maxMemory int64) ([]
 		}
 	}(file)
 
-	chunkFiles := []string{}
+	var chunkFiles []string
 
 	scanner := bufio.NewScanner(file)
-	buffer := []int{}
+	buffer := make([]int, 0, 100)
 	memUsed := int64(0)
 
 	for scanner.Scan() {
@@ -72,9 +82,7 @@ func (s *ExternalSort) createSortedChunks(inputFile string, maxMemory int64) ([]
 		memUsed += int64(len(line) + 1)
 
 		if memUsed >= maxMemory {
-			sortedNums := s.ms.MergeSort(buffer)
-			chunkFile := fmt.Sprintf("chunk%d.txt", len(chunkFiles))
-			err := s.fs.WriteChunk(chunkFile, sortedNums)
+			chunkFile, err := s.saveSortedChunk(&buffer, len(chunkFiles))
 			if err != nil {
 				return nil, err
 			}
@@ -86,9 +94,7 @@ func (s *ExternalSort) createSortedChunks(inputFile string, maxMemory int64) ([]
 	}
 
 	if len(buffer) > 0 {
-		sortedNums := s.ms.MergeSort(buffer)
-		chunkFile := fmt.Sprintf("chunk%d.txt", len(chunkFiles))
-		err := s.fs.WriteChunk(chunkFile, sortedNums)
+		chunkFile, err := s.saveSortedChunk(&buffer, len(chunkFiles))
 		if err != nil {
 			return nil, err
 		}
